@@ -1,0 +1,7 @@
+{
+  "name": "musicians-backend",
+  "version": "1.0.0",
+  "dependencies": {
+    "node-mailjet": "^6.0.4"
+  }
+}
