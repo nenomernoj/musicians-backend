@@ -4,7 +4,7 @@ const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root', // Замените на ваше имя пользователя
     password: '', // Замените на ваш пароль
-    database: 'musicians_db' // Замените на название вашей базы данных
+    database: 'badum_kz' // Замените на название вашей базы данных
 });
 connection.connect(error => {
     if (error) throw error;

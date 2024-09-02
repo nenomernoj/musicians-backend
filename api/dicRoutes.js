@@ -20,7 +20,7 @@ router.get('/instruments', (req, res) => {
 });
 
 router.get('/genres', (req, res) => {
-    const sql = 'SELECT id as Id, name as Name, additionalName as AdditionalName FROM genres';
+    const sql = 'SELECT * FROM genrys';
     db.query(sql, (err, results) => {
         if (err) throw err;
         res.json(results);
