@@ -7,91 +7,111 @@ const router = express.Router();
 const verifyToken = require('../middleware/verifyToken');
 const db = require('../db'); // Подключение к базе данных
 
-// Настройка multer
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadPath = 'uploads/'; // Временное место для хранения файла до обработки
-        cb(null, uploadPath);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        const fileName = `${Date.now()}${ext}`;
-        cb(null, fileName);
-    }
-});
+// Функция для удаления старых изображений
+const deleteOldAvatar = (userId, callback) => {
+    const sqlSelectImage = 'SELECT original_path, thumbnail_path FROM images WHERE owner_id = ? AND owner_type = "user"';
+    db.query(sqlSelectImage, [userId], (err, results) => {
+        if (err) return callback(err);
 
-const upload = multer({ storage: storage });
+        if (results.length > 0) {
+            const {original_path, thumbnail_path} = results[0];
+
+            // Удаляем оригинал и миниатюру, если они существуют
+            if (fs.existsSync(original_path)) {
+                fs.unlinkSync(original_path);
+            }
+            if (fs.existsSync(thumbnail_path)) {
+                fs.unlinkSync(thumbnail_path);
+            }
+
+            // Удаляем запись из базы данных
+            const sqlDeleteImage = 'DELETE FROM images WHERE owner_id = ? AND owner_type = "user"';
+            db.query(sqlDeleteImage, [userId], (err) => {
+                if (err) return callback(err);
+                callback(null);
+            });
+        } else {
+            callback(null);
+        }
+    });
+};
+
+// Настройка multer
+// Настройка multer для хранения файлов в памяти
+const storage = multer.memoryStorage(); // Хранение файлов в памяти
+
+const upload = multer({
+    storage: storage,
+    limits: {fileSize: 10 * 1024 * 1024}
+});
 
 router.post('/upload', verifyToken, upload.single('image'), (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ message: 'Файл не был загружен' });
+        return res.status(400).json({message: 'Файл не был загружен'});
     }
 
-    const { type, owner_id } = req.body;
+    const {type} = req.body;
     let uploadPath;
-    let actualOwnerId = owner_id;
+    let actualOwnerId = req.user.userId; // Получаем ID пользователя из токена
 
-    if (!type) {
-        return res.status(400).json({ message: 'Тип не определен' });
+    if (type !== 'user') {
+        return res.status(400).json({message: 'Неверный тип. Только аватары пользователя поддерживаются.'});
     }
 
-    if (type === 'user') {
-        actualOwnerId = req.user.userId;
-        uploadPath = 'uploads/users/';
-    } else if (type === 'group') {
-        uploadPath = 'uploads/groups/avatars/';
-    } else if (type === 'listing') {
-        uploadPath = 'uploads/listings/photos/';
-    } else {
-        return res.status(400).json({ message: 'Неверный тип' });
-    }
+    uploadPath = 'uploads/users/';
 
-    // Обновление пути в req.uploadPath для сохранения файла
-    req.uploadPath = uploadPath;
+    // Генерируем пути для сохранения
+    const fileName = `${Date.now()}.jpg`;
+    const finalOriginalPath = path.join(uploadPath, fileName);
+    const thumbnailPath = path.join(uploadPath, 'thumbnails', fileName);
 
-    const finalOriginalPath = `${uploadPath}${req.file.filename}`;
-    const thumbnailPath = `${uploadPath}thumbnails/${req.file.filename}`;
-
-    sharp(req.file.path)
+    // Обрабатываем файл напрямую из памяти
+    sharp(req.file.buffer)
         .resize(300, 300)
         .toFile(thumbnailPath)
         .then(() => {
-            const { size } = fs.statSync(req.file.path);
-            if (size > 5 * 1024 * 1024) {
-                // Если размер файла больше 5МБ, сжимаем его и сохраняем в оригинальный путь
-                return sharp(req.file.path)
-                    .resize(1920, 1024, { fit: 'inside' })
-                    .toFile(finalOriginalPath)
-                    .then(() => {
-                        fs.unlinkSync(req.file.path); // Удаляем временный файл после сжатия
-                    });
+            // Если размер файла больше 5МБ, сжимаем его и сохраняем в оригинальный путь
+            if (req.file.size > 5 * 1024 * 1024) {
+                return sharp(req.file.buffer)
+                    .resize(1920, 1024, {fit: 'inside'})
+                    .toFile(finalOriginalPath);
             } else {
-                // Если файл меньше 5МБ, просто сохраняем его
-                return fs.renameSync(req.file.path, finalOriginalPath); // Перемещаем файл
+                // Если файл меньше 5МБ, сохраняем его напрямую
+                return sharp(req.file.buffer).toFile(finalOriginalPath);
             }
         })
         .then(() => {
+            // Сохранение информации об изображении в базе данных (пример)
             const sqlInsertImage = `
                 INSERT INTO images (owner_id, owner_type, original_path, thumbnail_path)
-                VALUES (?, ?, ?, ?)
+                VALUES (?, "user", ?, ?)
             `;
-            db.query(sqlInsertImage, [actualOwnerId, type, finalOriginalPath, thumbnailPath], (err, result) => {
+            db.query(sqlInsertImage, [actualOwnerId, finalOriginalPath, thumbnailPath], (err, result) => {
                 if (err) {
                     console.error('Ошибка при сохранении изображения в базу данных:', err);
-                    return res.status(500).json({ message: 'Ошибка при сохранении изображения' });
+                    return res.status(500).json({message: 'Ошибка при сохранении изображения'});
                 }
 
                 res.json({
-                    message: 'Изображение успешно загружено и сохранено',
+                    message: 'Аватар успешно загружен и сохранен',
                     imageId: result.insertId,
                     originalPath: finalOriginalPath,
                     thumbnailPath: thumbnailPath
                 });
             });
+            const memoryUsage = process.memoryUsage();
+
+            console.log('Memory Usage:');
+            console.log(`RSS (Resident Set Size): ${memoryUsage.rss / 1024 / 1024} MB`);
+            console.log(`Heap Total: ${memoryUsage.heapTotal / 1024 / 1024} MB`);
+            console.log(`Heap Used: ${memoryUsage.heapUsed / 1024 / 1024} MB`);
+            console.log(`External: ${memoryUsage.external / 1024 / 1024} MB`);
+            console.log(`Array Buffers: ${memoryUsage.arrayBuffers / 1024 / 1024} MB`);
+
         })
         .catch(err => {
             console.error('Ошибка при обработке изображения:', err);
-            res.status(500).json({ message: 'Ошибка при обработке изображения' });
+            res.status(500).json({message: 'Ошибка при обработке изображения'});
         });
 });
 

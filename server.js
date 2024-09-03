@@ -7,6 +7,10 @@ const authRoutes = require('./api/authRoutes');
 const dicRoutes = require('./api/dicRoutes');
 const userRoutes = require('./api/userRoutes');
 const uploadRoutes = require('./api/upload');
+const path = require('path');
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
