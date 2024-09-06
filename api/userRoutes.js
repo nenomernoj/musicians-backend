@@ -188,10 +188,8 @@ router.put('/change-password', verifyToken, (req, res) => {
 router.delete('/avatar/:id', verifyToken, (req, res) => {
     const imageId = req.params.id;
     const userId = req.user.userId; // Извлекаем userId из токена
-
     // SQL-запрос для получения данных изображения, включая owner_id
     const sqlGetImage = `SELECT original_path, thumbnail_path, owner_id FROM images WHERE id = ?`;
-
     db.query(sqlGetImage, [imageId], (err, results) => {
         if (err) {
             return res.status(500).json({message: 'Ошибка сервера при получении данных изображения'});
