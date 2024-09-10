@@ -456,7 +456,77 @@ router.put('/bands/:bandId/members/:userId/instruments', verifyToken, (req, res)
         });
     });
 });
+// API для создания объявления группы
+router.post('/bands/:bandId/ads', verifyToken, (req, res) => {
+    const bandId = req.params.bandId; // ID группы из URL
+    const { instrument_id, description, exp, exp_action, self_instr } = req.body; // Поля из тела запроса
 
+    // Проверка, что все необходимые поля переданы
+    if (!instrument_id || !description) {
+        return res.status(400).json({ message: 'instrument_id и description обязательны для заполнения' });
+    }
 
+    // Проверка прав: только админ или модератор группы могут создавать объявления
+    const sqlCheckAdminOrModerator = `
+        SELECT * FROM band_members 
+        WHERE band_id = ? AND user_id = ? AND role IN ('admin', 'moderator')
+    `;
+    const userId = req.user.userId; // ID текущего авторизованного пользователя
+
+    db.query(sqlCheckAdminOrModerator, [bandId, userId], (err, results) => {
+        if (err) {
+            console.error('Ошибка при проверке прав:', err);
+            return res.status(500).json({ message: 'Ошибка сервера при проверке прав' });
+        }
+
+        if (results.length === 0) {
+            return res.status(403).json({ message: 'У вас нет прав на создание объявления' });
+        }
+
+        // Вставляем новое объявление в таблицу
+        const sqlInsertAd = `
+            INSERT INTO band_search_ads (band_id, instrument_id, description, exp, exp_action, self_instr) 
+            VALUES (?, ?, ?, ?, ?, ?)
+        `;
+        db.query(sqlInsertAd, [bandId, instrument_id, description, exp, exp_action, self_instr], (err, result) => {
+            if (err) {
+                console.error('Ошибка при создании объявления:', err);
+                return res.status(500).json({ message: 'Ошибка при создании объявления' });
+            }
+
+            res.json({
+                message: 'Объявление успешно создано',
+                adId: result.insertId
+            });
+        });
+    });
+});
+// API для получения всех объявлений группы
+router.get('/bands/:bandId/ads', verifyToken, (req, res) => {
+    const bandId = req.params.bandId; // ID группы из URL
+
+    // SQL-запрос для получения всех объявлений группы
+    const sqlGetBandAds = `
+        SELECT id, instrument_id, description, exp, exp_action, self_instr, status 
+        FROM band_search_ads 
+        WHERE band_id = ?
+    `;
+
+    db.query(sqlGetBandAds, [bandId], (err, results) => {
+        if (err) {
+            console.error('Ошибка при получении объявлений группы:', err);
+            return res.status(500).json({ message: 'Ошибка сервера при получении объявлений' });
+        }
+
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Объявления не найдены' });
+        }
+
+        res.json({
+            message: 'Объявления группы успешно получены',
+            ads: results
+        });
+    });
+});
 
 module.exports = router;
