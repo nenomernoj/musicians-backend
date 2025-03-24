@@ -10,6 +10,7 @@ const uploadRoutes = require('./api/upload');
 const uploadGroupRoutes = require('./api/uploadGroup');
 const appealsRoutes = require('./api/userAppealsRoutes');
 const bandRoutes = require('./api/bandsRoutes');
+const publicRoutes = require('./api/publicRoutes');
 const path = require('path');
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -28,6 +29,7 @@ app.use('/api/files', uploadRoutes);
 app.use('/api/filesBand', uploadGroupRoutes);
 app.use('/api/my-appeals', appealsRoutes);
 app.use('/api/my-bands', bandRoutes);
+app.use('/api/public', publicRoutes);
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
