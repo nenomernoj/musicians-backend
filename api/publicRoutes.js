@@ -300,18 +300,21 @@ router.get('/bands/:id', (req, res) => {
             b.city_id AS band_city_id,
             b.text AS band_description,
             b.band_form_date,
+            b.com_project,
+            b.cover_band,
+            b.self_creation,
 
             (SELECT GROUP_CONCAT(bg.genre_id) FROM band_genres bg WHERE bg.band_id = b.id) AS genre_ids,
             (SELECT i.thumbnail_path FROM images i WHERE i.owner_id = b.id AND i.owner_type = 'group' LIMIT 1) AS band_avatar,
 
-      u.id AS user_id,
-      u.name AS user_name,
-      u.nickname AS user_nickname,
-      u.phone,
-      u.email,
-      u.vk,
-      u.instagram,
-      u.facebook
+            u.id AS user_id,
+            u.name AS user_name,
+            u.nickname AS user_nickname,
+            u.phone,
+            u.email,
+            u.vk,
+            u.instagram,
+            u.facebook
 
         FROM band_search_ads bsa
             JOIN bands b ON b.id = bsa.band_id
@@ -349,7 +352,10 @@ router.get('/bands/:id', (req, res) => {
             description: row.band_description,
             band_form_date: row.band_form_date,
             genre_ids: row.genre_ids ? row.genre_ids.split(',').map(Number) : [],
-            avatar: row.band_avatar || null
+            avatar: row.band_avatar || null,
+            com_project: row.com_project,
+            cover_band: row.cover_band,
+            self_creation: row.self_creation
         };
 
         const author = {
@@ -371,6 +377,36 @@ router.get('/bands/:id', (req, res) => {
         });
     });
 });
+router.get('/top-instruments', (req, res) => {
+    const sql = `
+    SELECT 
+        i.id,
+        i.nameRu,
+        COUNT(*) AS total_ads
+    FROM (
+        SELECT instrument_id FROM musician_search_ads
+        UNION ALL
+        SELECT instrument_id FROM band_search_ads
+    ) AS all_ads
+    JOIN instruments i ON i.id = all_ads.instrument_id
+    GROUP BY i.id, i.nameRu
+    ORDER BY total_ads DESC
+    LIMIT 10
+  `;
+
+    db.query(sql, (err, results) => {
+        if (err) {
+            console.error('Ошибка при получении популярных инструментов:', err);
+            return res.status(500).json({ message: 'Ошибка сервера' });
+        }
+
+        res.json({
+            message: 'Топ 10 популярных инструментов по объявлениям',
+            instruments: results
+        });
+    });
+});
+
 
 
 
