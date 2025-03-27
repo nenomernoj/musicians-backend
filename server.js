@@ -14,7 +14,6 @@ const publicRoutes = require('./api/publicRoutes');
 const path = require('path');
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
