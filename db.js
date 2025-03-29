@@ -1,16 +1,17 @@
 // db.js
 const mysql = require('mysql2');
 
-const connection = mysql.createConnection({
+const pool = mysql.createPool({
     host: 'localhost',
-    user: 'root',           // Тот, что создали/назначили
-    password: 'root', // Пароль
-    database: 'badum_kz'         // Название вашей БД
+    user: 'root',
+    password: 'root',
+    database: 'Nenomortyr1991#',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 
-connection.connect(error => {
-    if (error) throw error;
-    console.log('Successfully connected to the database.');
-});
+// В старом варианте был: const connection = mysql.createConnection(...);
+// И connection.connect(...) не нужно вызывать в случае пула — он сам управляет соединениями.
 
-module.exports = connection;
+module.exports = pool;
