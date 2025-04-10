@@ -11,8 +11,9 @@ const uploadGroupRoutes = require('./api/uploadGroup');
 const appealsRoutes = require('./api/userAppealsRoutes');
 const bandRoutes = require('./api/bandsRoutes');
 const publicRoutes = require('./api/publicRoutes');
+const marketRoutes = require('./api/marketRoutes');
 const path = require('path');
-
+const uploadMarketRoutes = require('./api/uploadMarket');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
 app.use(bodyParser.json());
@@ -29,6 +30,8 @@ app.use('/api/filesBand', uploadGroupRoutes);
 app.use('/api/my-appeals', appealsRoutes);
 app.use('/api/my-bands', bandRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/market', marketRoutes);
+app.use('/api/files', uploadMarketRoutes);
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
