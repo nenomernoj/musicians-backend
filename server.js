@@ -14,6 +14,7 @@ const publicRoutes = require('./api/publicRoutes');
 const marketRoutes = require('./api/marketRoutes');
 const path = require('path');
 const uploadMarketRoutes = require('./api/uploadMarket');
+const adminAppealsRoutes = require('./api/adminAppealsRoutes');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(cors());
 app.use(bodyParser.json());
@@ -32,6 +33,7 @@ app.use('/api/my-bands', bandRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/files', uploadMarketRoutes);
+app.use('/api/admin', adminAppealsRoutes);
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

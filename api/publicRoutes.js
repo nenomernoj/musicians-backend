@@ -60,27 +60,27 @@ router.get('/musicians', (req, res) => {
 
         // 📄 Теперь запрашиваем данные с LIMIT и OFFSET
         const dataSql = `
-      SELECT 
-        msa.id,
-        msa.instrument_id,
-        msa.description,
-        msa.city_id,
-        msa.exp,
-        msa.exp_action,
-        msa.self_instr,
-        msa.user_id,
-        u.name AS musician_name,
-        COALESCE(MAX(i.thumbnail_path), NULL) AS avatar,
-        GROUP_CONCAT(DISTINCT msg.genre_id) AS genres
-      FROM musician_search_ads msa
-      JOIN users u ON msa.user_id = u.id
-      LEFT JOIN images i ON u.id = i.owner_id AND i.owner_type = 'user'
-      LEFT JOIN musician_search_ad_genres msg ON msa.id = msg.ad_id
-      ${whereClause}
-      GROUP BY msa.id
-      ORDER BY msa.id DESC
-      LIMIT ? OFFSET ?
-    `;
+            SELECT msa.id,
+                   msa.instrument_id,
+                   msa.description,
+                   msa.city_id,
+                   msa.exp,
+                   msa.exp_action,
+                   msa.self_instr,
+                   msa.user_id,
+                   msa.applicant_name,
+                   msa.applicant_phone, u.name AS musician_name, COALESCE(MAX(i.thumbnail_path), NULL) AS avatar,
+                   GROUP_CONCAT(DISTINCT msg.genre_id) AS genres
+            FROM musician_search_ads msa
+                     JOIN users u ON msa.user_id = u.id
+                     LEFT JOIN images i ON u.id = i.owner_id AND i.owner_type = 'user'
+                     LEFT JOIN musician_search_ad_genres msg ON msa.id = msg.ad_id
+                ${whereClause}
+            GROUP BY msa.id
+            ORDER BY msa.id DESC
+                LIMIT ?
+            OFFSET ?
+        `;
 
         const dataParams = [...params, limit, offset];
 
@@ -108,42 +108,42 @@ router.get('/musicians/:id', (req, res) => {
     const adId = req.params.id;
 
     const sql = `
-    SELECT 
-      msa.id AS ad_id,
-      msa.description,
-      msa.instrument_id,
-      msa.city_id,
-      msa.exp,
-      msa.exp_action,
-      msa.self_instr,
-      msa.exp_band,
-      msa.exp_band_action,
-      msa.base,
-      msa.self_creation,
-      msa.com_project,
-      msa.cover_band,
-      msa.date,
+        SELECT msa.id                              AS ad_id,
+               msa.description,
+               msa.instrument_id,
+               msa.city_id,
+               msa.exp,
+               msa.exp_action,
+               msa.self_instr,
+               msa.exp_band,
+               msa.exp_band_action,
+               msa.base,
+               msa.self_creation,
+               msa.com_project,
+               msa.cover_band,
+               msa.date,
+               msa.applicant_name,
+               msa.applicant_phone,
+               u.id                                AS user_id,
+               u.name,
+               u.nickname,
+               u.city_id                           AS user_city_id,
+               u.vk,
+               u.facebook,
+               u.instagram,
+               u.phone,
+               u.email,
+               MAX(i.thumbnail_path)               AS avatar,
 
-      u.id AS user_id,
-      u.name,
-      u.nickname,
-      u.city_id AS user_city_id,
-      u.vk,
-      u.facebook,
-      u.instagram,
-      u.phone,
-      u.email,
-      MAX(i.thumbnail_path) AS avatar,
+               GROUP_CONCAT(DISTINCT msg.genre_id) AS genre_ids
 
-      GROUP_CONCAT(DISTINCT msg.genre_id) AS genre_ids
-
-    FROM musician_search_ads msa
-    JOIN users u ON msa.user_id = u.id
-    LEFT JOIN images i ON u.id = i.owner_id AND i.owner_type = 'user'
-    LEFT JOIN musician_search_ad_genres msg ON msa.id = msg.ad_id
-    WHERE msa.id = ?
-    GROUP BY msa.id
-  `;
+        FROM musician_search_ads msa
+                 JOIN users u ON msa.user_id = u.id
+                 LEFT JOIN images i ON u.id = i.owner_id AND i.owner_type = 'user'
+                 LEFT JOIN musician_search_ad_genres msg ON msa.id = msg.ad_id
+        WHERE msa.id = ?
+        GROUP BY msa.id
+    `;
 
     db.query(sql, [adId], (err, results) => {
         if (err) {
@@ -172,6 +172,8 @@ router.get('/musicians/:id', (req, res) => {
             com_project: row.com_project,
             cover_band: row.cover_band,
             date: row.date,
+            applicant_name: row.applicant_name,
+            applicant_phone: row.applicant_phone,
             genre_ids: row.genre_ids ? row.genre_ids.split(',').map(Number) : [],
         };
 

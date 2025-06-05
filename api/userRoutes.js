@@ -12,7 +12,7 @@ router.get('/profile', verifyToken, (req, res) => {
     const sql = `
         SELECT 
             u.id, u.email, u.name, u.city_id, u.nickname, u.phone, u.birthday, u.status, u.avatarId,
-            u.vk, u.facebook, u.instagram,  -- поля с маленькой буквы
+            u.vk, u.facebook, u.instagram, u.is_admin,  -- поля с маленькой буквы
             GROUP_CONCAT(ui.instrument_id) AS instrument_ids
         FROM users u
         LEFT JOIN user_instruments ui ON u.id = ui.user_id
@@ -62,6 +62,7 @@ router.get('/profile', verifyToken, (req, res) => {
                 phone: user.phone,
                 birthday: user.birthday,
                 status: user.status,
+                mod: user.is_admin,
                 avatar: avatar, // Включаем аватар в ответ
                 vk: user.vk,             // поле с маленькой буквы
                 facebook: user.facebook, // поле с маленькой буквы
