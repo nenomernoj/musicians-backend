@@ -296,7 +296,7 @@ router.get('/bands/:id', (req, res) => {
             bsa.exp,
             bsa.exp_action,
             bsa.self_instr,
-
+            
             b.id AS band_id,
             b.name AS band_name,
             b.city_id AS band_city_id,
@@ -305,6 +305,7 @@ router.get('/bands/:id', (req, res) => {
             b.com_project,
             b.cover_band,
             b.self_creation,
+            b.applicant_phone,
 
             (SELECT GROUP_CONCAT(bg.genre_id) FROM band_genres bg WHERE bg.band_id = b.id) AS genre_ids,
             (SELECT i.thumbnail_path FROM images i WHERE i.owner_id = b.id AND i.owner_type = 'group' LIMIT 1) AS band_avatar,
@@ -345,6 +346,7 @@ router.get('/bands/:id', (req, res) => {
             exp: row.exp,
             exp_action: row.exp_action,
             self_instr: row.self_instr
+
         };
 
         const band = {
@@ -357,7 +359,8 @@ router.get('/bands/:id', (req, res) => {
             avatar: row.band_avatar || null,
             com_project: row.com_project,
             cover_band: row.cover_band,
-            self_creation: row.self_creation
+            self_creation: row.self_creation,
+            applicant_phone: row.applicant_phone
         };
 
         const author = {
