@@ -124,7 +124,7 @@ router.post('/ads', verifyToken, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(sqlInsertAd, [userId, instrument_id, description, city_id, exp, exp_action, self_instr, exp_band, exp_band_action, base, self_creation, com_project, cover_band, applicant_name, applicant_phone], (err, result) => {
+    db.query(sqlInsertAd, [userId, instrument_id, description, city_id, exp, exp_action, self_instr, exp_band, exp_band_action, base, self_creation, com_project, cover_band], (err, result) => {
         if (err) {
             console.error('Ошибка при создании объявления:', err);
             return res.status(500).json({message: 'Ошибка сервера при создании объявления'});

@@ -224,7 +224,6 @@ router.get('/', (req, res) => {
         res.json({ads: results});
     });
 });
-
 router.put('/:id', verifyToken, (req, res) => {
     const userId = req.user.userId;
     const adId = req.params.id;
@@ -317,8 +316,6 @@ router.put('/:id', verifyToken, (req, res) => {
         });
     });
 });
-
-
 router.delete('/:id', verifyToken, (req, res) => {
     const userId = req.user.userId;
     const adId = req.params.id;
